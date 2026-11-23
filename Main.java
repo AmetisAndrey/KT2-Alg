@@ -12,377 +12,448 @@ public class Main {
         task6();
     }
 
-    // ЗАДАЧА 1.
-    // Суммы значений вершин на каждом уровне дерева.
+    // ==================================================
+    // ЗАДАЧА 1. Правильные скобочные последовательности
+    // ==================================================
 
     static void task1() {
         System.out.println("Задача 1:");
 
-        int[] value = {5, 3, 8, 2, 4, 7, 9};
-        int[] left  = {1, 3, 5, -1, -1, -1, -1};
-        int[] right = {2, 4, 6, -1, -1, -1, -1};
+        int n = 3;
 
-        int n = value.length;
+        char[] result = new char[2 * n];
 
-        int[] queue = new int[n];
-        int head = 0;
-        int tail = 0;
+        generateBrackets(result, 0, 0, 0, n);
 
-        queue[tail++] = 0;
+        System.out.println();
+    }
 
-        List<Long> sums = new ArrayList<>();
-
-        while (head < tail) {
-            int levelSize = tail - head;
-            long sum = 0;
-
-            for (int i = 0; i < levelSize; i++) {
-                int v = queue[head++];
-                sum += value[v];
-
-                if (left[v] != -1) {
-                    queue[tail++] = left[v];
-                }
-
-                if (right[v] != -1) {
-                    queue[tail++] = right[v];
-                }
-            }
-
-            sums.add(sum);
+    static void generateBrackets(
+            char[] result,
+            int pos,
+            int open,
+            int close,
+            int n
+    ) {
+        if (pos == 2 * n) {
+            System.out.println(new String(result));
+            return;
         }
 
-        for (long sum : sums) {
-            System.out.print(sum + " ");
+        // '(' лексикографически меньше ')',
+        // поэтому сначала пробуем добавить '('.
+        if (open < n) {
+            result[pos] = '(';
+
+            generateBrackets(
+                    result, pos + 1,
+                    open + 1, close, n
+            );
         }
 
-        System.out.println("\n");
+        // Закрывающая скобка допустима,
+        // только если есть незакрытая открывающая.
+        if (close < open) {
+            result[pos] = ')';
+
+            generateBrackets(
+                    result, pos + 1,
+                    open, close + 1, n
+            );
+        }
     }
 
 
-    // ЗАДАЧА 2.
-    // k наиболее часто встречающихся чисел.
+    // ==================================================
+    // ЗАДАЧА 2. Trie: ADD, REMOVE, COUNT
+    // ==================================================
+
+    static class TrieNode {
+        TrieNode[] next = new TrieNode[26];
+        int count;
+    }
+
+    static class PrefixTrie {
+        TrieNode root = new TrieNode();
+
+        void add(String word) {
+            TrieNode node = root;
+            node.count++;
+
+            for (int i = 0; i < word.length(); i++) {
+                int c = word.charAt(i) - 'a';
+
+                if (node.next[c] == null) {
+                    node.next[c] = new TrieNode();
+                }
+
+                node = node.next[c];
+                node.count++;
+            }
+        }
+
+        void remove(String word) {
+            TrieNode node = root;
+            node.count--;
+
+            for (int i = 0; i < word.length(); i++) {
+                int c = word.charAt(i) - 'a';
+
+                node = node.next[c];
+                node.count--;
+            }
+        }
+
+        int count(String prefix) {
+            TrieNode node = root;
+
+            for (int i = 0; i < prefix.length(); i++) {
+                int c = prefix.charAt(i) - 'a';
+
+                if (node.next[c] == null) {
+                    return 0;
+                }
+
+                node = node.next[c];
+            }
+
+            return node.count;
+        }
+    }
 
     static void task2() {
         System.out.println("Задача 2:");
 
-        int[] a = {1, 1, 1, 2, 2, 3, 3, 3, 2, 4};
-        int k = 3;
+        PrefixTrie trie = new PrefixTrie();
 
-        Map<Integer, Integer> freq = new HashMap<>();
+        trie.add("apple");
+        trie.add("app");
+        trie.add("application");
+        trie.add("banana");
 
-        for (int x : a) {
-            freq.put(x, freq.getOrDefault(x, 0) + 1);
-        }
+        System.out.println(trie.count("app"));
+        trie.remove("app");
 
-        List<Integer> numbers = new ArrayList<>(freq.keySet());
+        System.out.println(trie.count("app"));
+        System.out.println(trie.count("ban"));
 
-        numbers.sort((x, y) -> {
-            int byFrequency = Integer.compare(
-                    freq.get(y), freq.get(x)
-            );
-
-            if (byFrequency != 0) {
-                return byFrequency;
-            }
-
-            return Integer.compare(x, y);
-        });
-
-        for (int i = 0; i < k; i++) {
-            System.out.print(numbers.get(i) + " ");
-        }
-
-        System.out.println("\n");
+        System.out.println();
     }
 
 
-    // ЗАДАЧА 3.
-    // Медиана после каждого поступившего числа.
+    // ==================================================
+    // ЗАДАЧА 3. Два числа, встречающиеся один раз
+    // ==================================================
 
     static void task3() {
         System.out.println("Задача 3:");
 
-        int[] a = {5, 2, 10, 4};
+        int[] a = {1, 2, 1, 3, 4, 2};
 
-        // Левая половина — max-heap.
-        PriorityQueue<Long> left =
-                new PriorityQueue<>(Collections.reverseOrder());
-
-        // Правая половина — min-heap.
-        PriorityQueue<Long> right =
-                new PriorityQueue<>();
+        int xor = 0;
 
         for (int x : a) {
-            long value = x;
-
-            if (left.isEmpty() || value <= left.peek()) {
-                left.add(value);
-            } else {
-                right.add(value);
-            }
-
-            // Балансируем размеры куч.
-            if (left.size() > right.size() + 1) {
-                right.add(left.poll());
-            }
-
-            if (right.size() > left.size()) {
-                left.add(right.poll());
-            }
-
-            double median;
-
-            if (left.size() == right.size()) {
-                median = (left.peek() + right.peek()) / 2.0;
-            } else {
-                median = left.peek();
-            }
-
-            System.out.printf(Locale.US, "%.1f ", median);
+            xor ^= x;
         }
 
-        System.out.println("\n");
+        // xor = first ^ second.
+        // Находим младший установленный бит.
+        int bit = xor & -xor;
+
+        int first = 0;
+        int second = 0;
+
+        for (int x : a) {
+            if ((x & bit) == 0) {
+                first ^= x;
+            } else {
+                second ^= x;
+            }
+        }
+
+        System.out.println(
+                Math.min(first, second) + " " +
+                        Math.max(first, second)
+        );
+
+        System.out.println();
     }
 
 
-    // ЗАДАЧА 4.
-    // Максимальная сумма маршрута в бинарном дереве.
+    // ==================================================
+    // ЗАДАЧА 4. Количество расстановок ферзей
+    // ==================================================
 
     static void task4() {
         System.out.println("Задача 4:");
 
-        int[] value = {5, 3, 8, 2, 4, 7, 9};
-        int[] left  = {1, 3, 5, -1, -1, -1, -1};
-        int[] right = {2, 4, 6, -1, -1, -1, -1};
+        int n = 4;
 
-        int n = value.length;
+        // forbidden[row] содержит запрещённые столбцы.
+        // Нумерация в массиве начинается с нуля.
+        long[] forbidden = new long[n];
 
-        // Получаем порядок обхода дерева.
-        // Затем обработаем его в обратном порядке.
-        int[] order = new int[n];
-        int[] stack = new int[n];
+        // Запрещённая клетка (1, 2).
+        forbidden[0] |= (1L << 1);
 
-        int stackSize = 0;
-        int orderSize = 0;
+        long fullMask = (1L << n) - 1;
 
-        stack[stackSize++] = 0;
-
-        while (stackSize > 0) {
-            int v = stack[--stackSize];
-
-            order[orderSize++] = v;
-
-            if (left[v] != -1) {
-                stack[stackSize++] = left[v];
-            }
-
-            if (right[v] != -1) {
-                stack[stackSize++] = right[v];
-            }
-        }
-
-        // down[v] — максимальная сумма пути,
-        // который начинается в v и идет вниз.
-        long[] down = new long[n];
-
-        long answer = Long.MIN_VALUE;
-
-        for (int i = orderSize - 1; i >= 0; i--) {
-            int v = order[i];
-
-            long leftPath = 0;
-            long rightPath = 0;
-
-            if (left[v] != -1) {
-                leftPath = Math.max(0, down[left[v]]);
-            }
-
-            if (right[v] != -1) {
-                rightPath = Math.max(0, down[right[v]]);
-            }
-
-            // Лучший путь, проходящий через текущую вершину.
-            long currentPath =
-                    (long) value[v] + leftPath + rightPath;
-
-            answer = Math.max(answer, currentPath);
-
-            // Лучший путь из вершины вниз.
-            down[v] = value[v] + Math.max(leftPath, rightPath);
-        }
+        long answer = countQueens(
+                0,
+                n,
+                fullMask,
+                forbidden,
+                0L,
+                0L,
+                0L
+        );
 
         System.out.println(answer);
         System.out.println();
     }
 
+    static long countQueens(
+            int row,
+            int n,
+            long fullMask,
+            long[] forbidden,
+            long columns,
+            long diag1,
+            long diag2
+    ) {
+        if (row == n) {
+            return 1;
+        }
 
-    // ЗАДАЧА 5.
-    // k-я наименьшая сумма A[i] + B[j].
+        long available = fullMask
+                & ~(columns | diag1 | diag2)
+                & ~forbidden[row];
 
-    static class Pair {
-        long sum;
-        int i;
-        int j;
+        long answer = 0;
 
-        Pair(long sum, int i, int j) {
-            this.sum = sum;
-            this.i = i;
-            this.j = j;
+        while (available != 0) {
+            long bit = available & -available;
+
+            available -= bit;
+
+            answer += countQueens(
+                    row + 1,
+                    n,
+                    fullMask,
+                    forbidden,
+                    columns | bit,
+                    (diag1 | bit) << 1,
+                    (diag2 | bit) >> 1
+            );
+        }
+
+        return answer;
+    }
+
+
+    // ==================================================
+    // ЗАДАЧА 5. Trie: ADD, REMOVE, KTH
+    // ==================================================
+
+    static class KthNode {
+        KthNode[] next = new KthNode[26];
+
+        // Количество слов в поддереве.
+        int count;
+
+        // Слово заканчивается в этой вершине.
+        boolean terminal;
+    }
+
+    static class KthTrie {
+        KthNode root = new KthNode();
+
+        void add(String word) {
+            KthNode node = root;
+            node.count++;
+
+            for (int i = 0; i < word.length(); i++) {
+                int c = word.charAt(i) - 'a';
+
+                if (node.next[c] == null) {
+                    node.next[c] = new KthNode();
+                }
+
+                node = node.next[c];
+                node.count++;
+            }
+
+            node.terminal = true;
+        }
+
+        void remove(String word) {
+            KthNode node = root;
+            node.count--;
+
+            for (int i = 0; i < word.length(); i++) {
+                int c = word.charAt(i) - 'a';
+
+                node = node.next[c];
+                node.count--;
+            }
+
+            node.terminal = false;
+        }
+
+        String kth(String prefix, int k) {
+            KthNode node = root;
+
+            // Находим вершину префикса.
+            for (int i = 0; i < prefix.length(); i++) {
+                int c = prefix.charAt(i) - 'a';
+
+                if (node.next[c] == null) {
+                    return "NONE";
+                }
+
+                node = node.next[c];
+            }
+
+            if (k <= 0 || k > node.count) {
+                return "NONE";
+            }
+
+            StringBuilder answer = new StringBuilder(prefix);
+
+            while (true) {
+
+                // Сначала проверяем само слово.
+                // Короткое слово идёт раньше продолжений.
+                if (node.terminal) {
+                    if (k == 1) {
+                        return answer.toString();
+                    }
+
+                    k--;
+                }
+
+                boolean found = false;
+
+                // Перебираем буквы в алфавитном порядке.
+                for (int c = 0; c < 26; c++) {
+                    KthNode child = node.next[c];
+
+                    if (child == null || child.count == 0) {
+                        continue;
+                    }
+
+                    if (k > child.count) {
+                        k -= child.count;
+                    } else {
+                        answer.append((char) ('a' + c));
+                        node = child;
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    return "NONE";
+                }
+            }
         }
     }
 
     static void task5() {
         System.out.println("Задача 5:");
 
-        int[] a = {1, 3, 5};
-        int[] b = {2, 4};
+        KthTrie trie = new KthTrie();
 
-        int k = 4;
+        trie.add("apple");
+        trie.add("app");
+        trie.add("application");
+        trie.add("apply");
+        trie.add("banana");
 
-        // Min-heap пар.
-        PriorityQueue<Pair> pq = new PriorityQueue<>(
-                (x, y) -> Long.compare(x.sum, y.sum)
-        );
+        System.out.println(trie.kth("app", 1));
+        System.out.println(trie.kth("app", 2));
+        System.out.println(trie.kth("app", 3));
+        System.out.println(trie.kth("app", 4));
+        System.out.println(trie.kth("app", 5));
 
-        // Достаточно начать с первых min(n, k) строк.
-        for (int i = 0; i < Math.min(a.length, k); i++) {
-            pq.add(new Pair((long) a[i] + b[0], i, 0));
-        }
+        trie.remove("apple");
 
-        long answer = 0;
+        System.out.println(trie.kth("app", 2));
 
-        for (int count = 0; count < k; count++) {
-            Pair current = pq.poll();
-
-            answer = current.sum;
-
-            int nextJ = current.j + 1;
-
-            if (nextJ < b.length) {
-                pq.add(new Pair(
-                        (long) a[current.i] + b[nextJ],
-                        current.i,
-                        nextJ
-                ));
-            }
-        }
-
-        System.out.println(answer);
         System.out.println();
     }
 
 
-    // ЗАДАЧА 6.
-    // Медиана каждого скользящего окна.
+    // ==================================================
+    // ЗАДАЧА 6. Максимальный XOR подмассива
+    // ==================================================
 
-    static class MedianWindow {
+    static class XorNode {
+        XorNode[] next = new XorNode[2];
+    }
 
-        TreeMap<Long, Integer> lower = new TreeMap<>();
-        TreeMap<Long, Integer> upper = new TreeMap<>();
+    static class BinaryTrie {
+        XorNode root = new XorNode();
 
-        int lowerSize = 0;
-        int upperSize = 0;
+        void add(int value) {
+            XorNode node = root;
 
-        void addToMap(TreeMap<Long, Integer> map, long x) {
-            map.put(x, map.getOrDefault(x, 0) + 1);
-        }
+            for (int bit = 29; bit >= 0; bit--) {
+                int current = (value >>> bit) & 1;
 
-        void removeFromMap(TreeMap<Long, Integer> map, long x) {
-            int count = map.get(x);
+                if (node.next[current] == null) {
+                    node.next[current] = new XorNode();
+                }
 
-            if (count == 1) {
-                map.remove(x);
-            } else {
-                map.put(x, count - 1);
+                node = node.next[current];
             }
         }
 
-        void add(long x) {
-            if (lower.isEmpty() || x <= lower.lastKey()) {
-                addToMap(lower, x);
-                lowerSize++;
-            } else {
-                addToMap(upper, x);
-                upperSize++;
+        int maxXor(int value) {
+            XorNode node = root;
+            int result = 0;
+
+            for (int bit = 29; bit >= 0; bit--) {
+                int current = (value >>> bit) & 1;
+                int opposite = current ^ 1;
+
+                // Предпочитаем противоположный бит.
+                if (node.next[opposite] != null) {
+                    result |= (1 << bit);
+                    node = node.next[opposite];
+                } else {
+                    node = node.next[current];
+                }
             }
 
-            balance();
-        }
-
-        void remove(long x) {
-            if (lower.containsKey(x)) {
-                removeFromMap(lower, x);
-                lowerSize--;
-            } else {
-                removeFromMap(upper, x);
-                upperSize--;
-            }
-
-            balance();
-        }
-
-        void balance() {
-            // В lower должно быть столько же элементов,
-            // сколько в upper, либо на один больше.
-
-            while (lowerSize > upperSize + 1) {
-                long x = lower.lastKey();
-
-                removeFromMap(lower, x);
-                lowerSize--;
-
-                addToMap(upper, x);
-                upperSize++;
-            }
-
-            while (lowerSize < upperSize) {
-                long x = upper.firstKey();
-
-                removeFromMap(upper, x);
-                upperSize--;
-
-                addToMap(lower, x);
-                lowerSize++;
-            }
-        }
-
-        double getMedian() {
-            if (lowerSize > upperSize) {
-                return lower.lastKey();
-            }
-
-            return (lower.lastKey() + upper.firstKey()) / 2.0;
+            return result;
         }
     }
 
     static void task6() {
         System.out.println("Задача 6:");
 
-        int[] a = {1, 3, -1, -3, 5, 3, 6, 7};
-        int k = 3;
+        int[] a = {1, 2, 3, 4};
 
-        MedianWindow window = new MedianWindow();
+        BinaryTrie trie = new BinaryTrie();
 
-        for (int i = 0; i < k; i++) {
-            window.add(a[i]);
-        }
+        // Начальный префиксный XOR.
+        trie.add(0);
 
-        // Первое окно.
-        System.out.printf(
-                Locale.US, "%.1f ", window.getMedian()
-        );
+        int prefixXor = 0;
+        int answer = 0;
 
-        // Остальные окна.
-        for (int i = k; i < a.length; i++) {
-            window.remove(a[i - k]);
-            window.add(a[i]);
+        for (int x : a) {
+            prefixXor ^= x;
 
-            System.out.printf(
-                    Locale.US, "%.1f ", window.getMedian()
+            answer = Math.max(
+                    answer,
+                    trie.maxXor(prefixXor)
             );
+
+            trie.add(prefixXor);
         }
 
-        System.out.println();
+        System.out.println(answer);
     }
 }
