@@ -12,448 +12,497 @@ public class Main {
         task6();
     }
 
-    // ==================================================
-    // ЗАДАЧА 1. Правильные скобочные последовательности
-    // ==================================================
+    // =====================================================
+    // Общий класс узла односвязного списка
+    // =====================================================
 
-    static void task1() {
-        System.out.println("Задача 1:");
+    static class Node {
+        int value;
+        Node next;
 
-        int n = 3;
+        Node(int value) {
+            this.value = value;
+        }
+    }
 
-        char[] result = new char[2 * n];
+    static Node buildList(int[] a) {
+        Node dummy = new Node(0);
+        Node tail = dummy;
 
-        generateBrackets(result, 0, 0, 0, n);
+        for (int x : a) {
+            tail.next = new Node(x);
+            tail = tail.next;
+        }
+
+        return dummy.next;
+    }
+
+    static void printList(Node head) {
+        while (head != null) {
+            System.out.print(head.value);
+
+            if (head.next != null) {
+                System.out.print(" ");
+            }
+
+            head = head.next;
+        }
 
         System.out.println();
     }
 
-    static void generateBrackets(
-            char[] result,
-            int pos,
-            int open,
-            int close,
-            int n
-    ) {
-        if (pos == 2 * n) {
-            System.out.println(new String(result));
-            return;
+
+    // =====================================================
+    // ЗАДАЧА 1. Разворот односвязного списка
+    // =====================================================
+
+    static void task1() {
+        System.out.println("Задача 1:");
+
+        int[] a = {1, 2, 3, 4, 5};
+
+        Node head = buildList(a);
+
+        Node previous = null;
+        Node current = head;
+
+        while (current != null) {
+            Node next = current.next;
+
+            current.next = previous;
+
+            previous = current;
+            current = next;
         }
 
-        // '(' лексикографически меньше ')',
-        // поэтому сначала пробуем добавить '('.
-        if (open < n) {
-            result[pos] = '(';
+        head = previous;
 
-            generateBrackets(
-                    result, pos + 1,
-                    open + 1, close, n
-            );
-        }
-
-        // Закрывающая скобка допустима,
-        // только если есть незакрытая открывающая.
-        if (close < open) {
-            result[pos] = ')';
-
-            generateBrackets(
-                    result, pos + 1,
-                    open, close + 1, n
-            );
-        }
+        printList(head);
+        System.out.println();
     }
 
 
-    // ==================================================
-    // ЗАДАЧА 2. Trie: ADD, REMOVE, COUNT
-    // ==================================================
+    // =====================================================
+    // ЗАДАЧА 2. DSU: объединение и проверка связности
+    // =====================================================
 
-    static class TrieNode {
-        TrieNode[] next = new TrieNode[26];
-        int count;
-    }
+    static class DSU {
+        int[] parent;
+        int[] size;
 
-    static class PrefixTrie {
-        TrieNode root = new TrieNode();
+        DSU(int n) {
+            parent = new int[n + 1];
+            size = new int[n + 1];
 
-        void add(String word) {
-            TrieNode node = root;
-            node.count++;
-
-            for (int i = 0; i < word.length(); i++) {
-                int c = word.charAt(i) - 'a';
-
-                if (node.next[c] == null) {
-                    node.next[c] = new TrieNode();
-                }
-
-                node = node.next[c];
-                node.count++;
+            for (int i = 1; i <= n; i++) {
+                parent[i] = i;
+                size[i] = 1;
             }
         }
 
-        void remove(String word) {
-            TrieNode node = root;
-            node.count--;
-
-            for (int i = 0; i < word.length(); i++) {
-                int c = word.charAt(i) - 'a';
-
-                node = node.next[c];
-                node.count--;
+        int find(int x) {
+            if (parent[x] != x) {
+                parent[x] = find(parent[x]);
             }
+
+            return parent[x];
         }
 
-        int count(String prefix) {
-            TrieNode node = root;
+        void union(int a, int b) {
+            int rootA = find(a);
+            int rootB = find(b);
 
-            for (int i = 0; i < prefix.length(); i++) {
-                int c = prefix.charAt(i) - 'a';
-
-                if (node.next[c] == null) {
-                    return 0;
-                }
-
-                node = node.next[c];
+            if (rootA == rootB) {
+                return;
             }
 
-            return node.count;
+            if (size[rootA] < size[rootB]) {
+                int temp = rootA;
+                rootA = rootB;
+                rootB = temp;
+            }
+
+            parent[rootB] = rootA;
+            size[rootA] += size[rootB];
+        }
+
+        boolean connected(int a, int b) {
+            return find(a) == find(b);
         }
     }
 
     static void task2() {
         System.out.println("Задача 2:");
 
-        PrefixTrie trie = new PrefixTrie();
+        int n = 5;
 
-        trie.add("apple");
-        trie.add("app");
-        trie.add("application");
-        trie.add("banana");
+        int[][] operations = {
+                {1, 1, 2},
+                {1, 2, 3},
+                {2, 1, 3},
+                {2, 1, 4},
+                {1, 4, 5},
+                {2, 4, 5},
+                {2, 3, 5}
+        };
 
-        System.out.println(trie.count("app"));
-        trie.remove("app");
+        DSU dsu = new DSU(n);
 
-        System.out.println(trie.count("app"));
-        System.out.println(trie.count("ban"));
+        for (int[] op : operations) {
+            int type = op[0];
+            int u = op[1];
+            int v = op[2];
+
+            if (type == 1) {
+                dsu.union(u, v);
+            } else {
+                System.out.println(
+                        dsu.connected(u, v) ? "YES" : "NO"
+                );
+            }
+        }
 
         System.out.println();
     }
 
 
-    // ==================================================
-    // ЗАДАЧА 3. Два числа, встречающиеся один раз
-    // ==================================================
+    // =====================================================
+    // ЗАДАЧА 3. Лексикографически минимальная
+    // топологическая сортировка
+    // =====================================================
 
     static void task3() {
         System.out.println("Задача 3:");
 
-        int[] a = {1, 2, 1, 3, 4, 2};
+        int n = 4;
 
-        int xor = 0;
+        int[][] edges = {
+                {1, 3},
+                {2, 3},
+                {3, 4}
+        };
 
-        for (int x : a) {
-            xor ^= x;
+        List<Integer>[] graph = new ArrayList[n + 1];
+
+        for (int i = 1; i <= n; i++) {
+            graph[i] = new ArrayList<>();
         }
 
-        // xor = first ^ second.
-        // Находим младший установленный бит.
-        int bit = xor & -xor;
+        int[] indegree = new int[n + 1];
 
-        int first = 0;
-        int second = 0;
+        for (int[] edge : edges) {
+            int u = edge[0];
+            int v = edge[1];
 
-        for (int x : a) {
-            if ((x & bit) == 0) {
-                first ^= x;
-            } else {
-                second ^= x;
+            graph[u].add(v);
+            indegree[v]++;
+        }
+
+        // Минимальная куча гарантирует
+        // лексикографически минимальный порядок.
+        PriorityQueue<Integer> pq = new PriorityQueue<>();
+
+        for (int i = 1; i <= n; i++) {
+            if (indegree[i] == 0) {
+                pq.add(i);
             }
         }
 
-        System.out.println(
-                Math.min(first, second) + " " +
-                        Math.max(first, second)
-        );
+        List<Integer> order = new ArrayList<>();
+
+        while (!pq.isEmpty()) {
+            int v = pq.poll();
+
+            order.add(v);
+
+            for (int to : graph[v]) {
+                indegree[to]--;
+
+                if (indegree[to] == 0) {
+                    pq.add(to);
+                }
+            }
+        }
+
+        if (order.size() != n) {
+            System.out.println(-1);
+        } else {
+            for (int x : order) {
+                System.out.print(x + " ");
+            }
+
+            System.out.println();
+        }
 
         System.out.println();
     }
 
 
-    // ==================================================
-    // ЗАДАЧА 4. Количество расстановок ферзей
-    // ==================================================
+    // =====================================================
+    // ЗАДАЧА 4. Разворот каждого полного блока из k узлов
+    // =====================================================
+
+    static Node reverseKGroup(Node head, int k) {
+        if (head == null || k <= 1) {
+            return head;
+        }
+
+        Node dummy = new Node(0);
+        dummy.next = head;
+
+        Node groupPrevious = dummy;
+
+        while (true) {
+            // Находим последний узел очередного блока.
+            Node kth = groupPrevious;
+
+            for (int i = 0; i < k && kth != null; i++) {
+                kth = kth.next;
+            }
+
+            // Неполный блок оставляем без изменений.
+            if (kth == null) {
+                break;
+            }
+
+            Node groupNext = kth.next;
+
+            // Разворачиваем текущий блок.
+            Node previous = groupNext;
+            Node current = groupPrevious.next;
+
+            while (current != groupNext) {
+                Node next = current.next;
+
+                current.next = previous;
+
+                previous = current;
+                current = next;
+            }
+
+            // Новый первый узел блока — kth.
+            Node oldGroupStart = groupPrevious.next;
+
+            groupPrevious.next = kth;
+
+            // Переходим к следующему блоку.
+            groupPrevious = oldGroupStart;
+        }
+
+        return dummy.next;
+    }
 
     static void task4() {
         System.out.println("Задача 4:");
 
-        int n = 4;
+        int[] a = {1, 2, 3, 4, 5, 6, 7, 8};
+        int k = 3;
 
-        // forbidden[row] содержит запрещённые столбцы.
-        // Нумерация в массиве начинается с нуля.
-        long[] forbidden = new long[n];
+        Node head = buildList(a);
 
-        // Запрещённая клетка (1, 2).
-        forbidden[0] |= (1L << 1);
+        head = reverseKGroup(head, k);
 
-        long fullMask = (1L << n) - 1;
-
-        long answer = countQueens(
-                0,
-                n,
-                fullMask,
-                forbidden,
-                0L,
-                0L,
-                0L
-        );
-
-        System.out.println(answer);
+        printList(head);
         System.out.println();
     }
 
-    static long countQueens(
-            int row,
-            int n,
-            long fullMask,
-            long[] forbidden,
-            long columns,
-            long diag1,
-            long diag2
-    ) {
-        if (row == n) {
-            return 1;
+
+    // =====================================================
+    // ЗАДАЧА 5. DSU с XOR-разницей между группами
+    // =====================================================
+
+    static class ParityDSU {
+        int[] parent;
+        int[] size;
+
+        // parity[x] = цвет[x] XOR цвет[parent[x]].
+        int[] parity;
+
+        ParityDSU(int n) {
+            parent = new int[n + 1];
+            size = new int[n + 1];
+            parity = new int[n + 1];
+
+            for (int i = 1; i <= n; i++) {
+                parent[i] = i;
+                size[i] = 1;
+                parity[i] = 0;
+            }
         }
 
-        long available = fullMask
-                & ~(columns | diag1 | diag2)
-                & ~forbidden[row];
+        int find(int x) {
+            if (parent[x] == x) {
+                return x;
+            }
 
-        long answer = 0;
+            int oldParent = parent[x];
 
-        while (available != 0) {
-            long bit = available & -available;
+            parent[x] = find(oldParent);
 
-            available -= bit;
+            parity[x] ^= parity[oldParent];
 
-            answer += countQueens(
-                    row + 1,
-                    n,
-                    fullMask,
-                    forbidden,
-                    columns | bit,
-                    (diag1 | bit) << 1,
-                    (diag2 | bit) >> 1
-            );
+            return parent[x];
         }
 
-        return answer;
-    }
+        // Требуется:
+        // color[u] XOR color[v] = required.
+        boolean unite(int u, int v, int required) {
+            int rootU = find(u);
+            int rootV = find(v);
 
+            int parityU = parity[u];
+            int parityV = parity[v];
 
-    // ==================================================
-    // ЗАДАЧА 5. Trie: ADD, REMOVE, KTH
-    // ==================================================
-
-    static class KthNode {
-        KthNode[] next = new KthNode[26];
-
-        // Количество слов в поддереве.
-        int count;
-
-        // Слово заканчивается в этой вершине.
-        boolean terminal;
-    }
-
-    static class KthTrie {
-        KthNode root = new KthNode();
-
-        void add(String word) {
-            KthNode node = root;
-            node.count++;
-
-            for (int i = 0; i < word.length(); i++) {
-                int c = word.charAt(i) - 'a';
-
-                if (node.next[c] == null) {
-                    node.next[c] = new KthNode();
-                }
-
-                node = node.next[c];
-                node.count++;
+            // Уже находятся в одной компоненте.
+            if (rootU == rootV) {
+                return (parityU ^ parityV) == required;
             }
 
-            node.terminal = true;
-        }
-
-        void remove(String word) {
-            KthNode node = root;
-            node.count--;
-
-            for (int i = 0; i < word.length(); i++) {
-                int c = word.charAt(i) - 'a';
-
-                node = node.next[c];
-                node.count--;
+            // Присоединяем меньшую компоненту к большей.
+            if (size[rootU] < size[rootV]) {
+                int temp = rootU;
+                rootU = rootV;
+                rootV = temp;
             }
 
-            node.terminal = false;
-        }
+            parent[rootV] = rootU;
 
-        String kth(String prefix, int k) {
-            KthNode node = root;
+            // XOR-разница между корнями.
+            parity[rootV] = parityU ^ parityV ^ required;
 
-            // Находим вершину префикса.
-            for (int i = 0; i < prefix.length(); i++) {
-                int c = prefix.charAt(i) - 'a';
+            size[rootU] += size[rootV];
 
-                if (node.next[c] == null) {
-                    return "NONE";
-                }
-
-                node = node.next[c];
-            }
-
-            if (k <= 0 || k > node.count) {
-                return "NONE";
-            }
-
-            StringBuilder answer = new StringBuilder(prefix);
-
-            while (true) {
-
-                // Сначала проверяем само слово.
-                // Короткое слово идёт раньше продолжений.
-                if (node.terminal) {
-                    if (k == 1) {
-                        return answer.toString();
-                    }
-
-                    k--;
-                }
-
-                boolean found = false;
-
-                // Перебираем буквы в алфавитном порядке.
-                for (int c = 0; c < 26; c++) {
-                    KthNode child = node.next[c];
-
-                    if (child == null || child.count == 0) {
-                        continue;
-                    }
-
-                    if (k > child.count) {
-                        k -= child.count;
-                    } else {
-                        answer.append((char) ('a' + c));
-                        node = child;
-                        found = true;
-                        break;
-                    }
-                }
-
-                if (!found) {
-                    return "NONE";
-                }
-            }
+            return true;
         }
     }
 
     static void task5() {
         System.out.println("Задача 5:");
 
-        KthTrie trie = new KthTrie();
+        int n = 4;
 
-        trie.add("apple");
-        trie.add("app");
-        trie.add("application");
-        trie.add("apply");
-        trie.add("banana");
+        int[][] statements = {
+                {1, 2, 1},
+                {2, 3, 0},
+                {1, 3, 1},
+                {1, 3, 0},
+                {3, 4, 1}
+        };
 
-        System.out.println(trie.kth("app", 1));
-        System.out.println(trie.kth("app", 2));
-        System.out.println(trie.kth("app", 3));
-        System.out.println(trie.kth("app", 4));
-        System.out.println(trie.kth("app", 5));
+        ParityDSU dsu = new ParityDSU(n);
 
-        trie.remove("apple");
+        boolean consistent = true;
 
-        System.out.println(trie.kth("app", 2));
+        for (int[] statement : statements) {
+            int u = statement[0];
+            int v = statement[1];
+            int r = statement[2];
+
+            if (consistent) {
+                consistent = dsu.unite(u, v, r);
+            }
+
+            System.out.println(
+                    consistent ? "YES" : "NO"
+            );
+        }
 
         System.out.println();
     }
 
 
-    // ==================================================
-    // ЗАДАЧА 6. Максимальный XOR подмассива
-    // ==================================================
-
-    static class XorNode {
-        XorNode[] next = new XorNode[2];
-    }
-
-    static class BinaryTrie {
-        XorNode root = new XorNode();
-
-        void add(int value) {
-            XorNode node = root;
-
-            for (int bit = 29; bit >= 0; bit--) {
-                int current = (value >>> bit) & 1;
-
-                if (node.next[current] == null) {
-                    node.next[current] = new XorNode();
-                }
-
-                node = node.next[current];
-            }
-        }
-
-        int maxXor(int value) {
-            XorNode node = root;
-            int result = 0;
-
-            for (int bit = 29; bit >= 0; bit--) {
-                int current = (value >>> bit) & 1;
-                int opposite = current ^ 1;
-
-                // Предпочитаем противоположный бит.
-                if (node.next[opposite] != null) {
-                    result |= (1 << bit);
-                    node = node.next[opposite];
-                } else {
-                    node = node.next[current];
-                }
-            }
-
-            return result;
-        }
-    }
+    // =====================================================
+    // ЗАДАЧА 6. Восстановление алфавита
+    // =====================================================
 
     static void task6() {
         System.out.println("Задача 6:");
 
-        int[] a = {1, 2, 3, 4};
+        int n = 5;
+        int k = 4;
 
-        BinaryTrie trie = new BinaryTrie();
+        String[] words = {
+                "baa",
+                "abcd",
+                "abca",
+                "cab",
+                "cad"
+        };
 
-        // Начальный префиксный XOR.
-        trie.add(0);
+        boolean[][] graph = new boolean[k][k];
+        int[] indegree = new int[k];
 
-        int prefixXor = 0;
-        int answer = 0;
+        boolean impossible = false;
 
-        for (int x : a) {
-            prefixXor ^= x;
+        // Сравниваем только соседние слова.
+        for (int i = 0; i + 1 < n; i++) {
+            String first = words[i];
+            String second = words[i + 1];
 
-            answer = Math.max(
-                    answer,
-                    trie.maxXor(prefixXor)
-            );
+            int j = 0;
 
-            trie.add(prefixXor);
+            while (j < first.length()
+                    && j < second.length()
+                    && first.charAt(j) == second.charAt(j)) {
+                j++;
+            }
+
+            // Второе слово является началом первого.
+            // Такая пара нарушает порядок.
+            if (j == second.length() && first.length() > second.length()) {
+                impossible = true;
+                break;
+            }
+
+            // Нашли первую различающуюся букву.
+            if (j < first.length() && j < second.length()) {
+                int u = first.charAt(j) - 'a';
+                int v = second.charAt(j) - 'a';
+
+                if (!graph[u][v]) {
+                    graph[u][v] = true;
+                    indegree[v]++;
+                }
+            }
         }
 
-        System.out.println(answer);
+        if (impossible) {
+            System.out.println("IMPOSSIBLE");
+            return;
+        }
+
+        // Минимальная куча обеспечивает
+        // лексикографически наименьший порядок букв.
+        PriorityQueue<Integer> pq = new PriorityQueue<>();
+
+        for (int i = 0; i < k; i++) {
+            if (indegree[i] == 0) {
+                pq.add(i);
+            }
+        }
+
+        StringBuilder answer = new StringBuilder();
+
+        while (!pq.isEmpty()) {
+            int v = pq.poll();
+
+            answer.append((char) ('a' + v));
+
+            for (int to = 0; to < k; to++) {
+                if (graph[v][to]) {
+                    indegree[to]--;
+
+                    if (indegree[to] == 0) {
+                        pq.add(to);
+                    }
+                }
+            }
+        }
+
+        if (answer.length() != k) {
+            System.out.println("IMPOSSIBLE");
+        } else {
+            System.out.println(answer);
+        }
     }
 }
