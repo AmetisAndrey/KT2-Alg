@@ -4,361 +4,385 @@ import java.util.*;
 public class Main {
 
     public static void main(String[] args) {
-
-        System.out.println("Задача 1");
         task1();
-
-        System.out.println("\nЗадача 2");
         task2();
-
-        System.out.println("\nЗадача 3");
         task3();
-
-        System.out.println("\nЗадача 4");
         task4();
-
-        System.out.println("\nЗадача 5");
         task5();
-
-        System.out.println("\nЗадача 6");
         task6();
     }
 
+    // ЗАДАЧА 1.
+    // Суммы значений вершин на каждом уровне дерева.
+
     static void task1() {
+        System.out.println("Задача 1:");
 
-        int[] prices = {73, 74, 75, 71, 69, 72, 76, 73};
+        int[] value = {5, 3, 8, 2, 4, 7, 9};
+        int[] left  = {1, 3, 5, -1, -1, -1, -1};
+        int[] right = {2, 4, 6, -1, -1, -1, -1};
 
-        int n = prices.length;
-        int[] result = new int[n];
+        int n = value.length;
 
-        Stack<Integer> stack = new Stack<>();
+        int[] queue = new int[n];
+        int head = 0;
+        int tail = 0;
 
-        for (int i = 0; i < n; i++) {
+        queue[tail++] = 0;
 
-            while (!stack.isEmpty() &&
-                    prices[i] > prices[stack.peek()]) {
+        List<Long> sums = new ArrayList<>();
 
-                int index = stack.pop();
-                result[index] = i - index;
+        while (head < tail) {
+            int levelSize = tail - head;
+            long sum = 0;
+
+            for (int i = 0; i < levelSize; i++) {
+                int v = queue[head++];
+                sum += value[v];
+
+                if (left[v] != -1) {
+                    queue[tail++] = left[v];
+                }
+
+                if (right[v] != -1) {
+                    queue[tail++] = right[v];
+                }
             }
 
-            stack.push(i);
+            sums.add(sum);
         }
 
-        System.out.println("Prices: " + Arrays.toString(prices));
-        System.out.println("Result: " + Arrays.toString(result));
+        for (long sum : sums) {
+            System.out.print(sum + " ");
+        }
+
+        System.out.println("\n");
     }
+
+
+    // ЗАДАЧА 2.
+    // k наиболее часто встречающихся чисел.
 
     static void task2() {
+        System.out.println("Задача 2:");
 
-        char[][] grid = {
-                {'S', '.', '.', '#', '.'},
-                {'#', '#', '.', '#', '.'},
-                {'.', '.', '.', '.', '.'},
-                {'.', '#', '#', '#', '.'},
-                {'.', '.', '.', 'T', '.'}
-        };
+        int[] a = {1, 1, 1, 2, 2, 3, 3, 3, 2, 4};
+        int k = 3;
 
-        int n = grid.length;
-        int m = grid[0].length;
+        Map<Integer, Integer> freq = new HashMap<>();
 
-        int[][] dist = new int[n][m];
-
-        for (int[] row : dist) {
-            Arrays.fill(row, -1);
+        for (int x : a) {
+            freq.put(x, freq.getOrDefault(x, 0) + 1);
         }
 
-        int startX = 0;
-        int startY = 0;
+        List<Integer> numbers = new ArrayList<>(freq.keySet());
 
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < m; j++) {
+        numbers.sort((x, y) -> {
+            int byFrequency = Integer.compare(
+                    freq.get(y), freq.get(x)
+            );
 
-                if (grid[i][j] == 'S') {
-                    startX = i;
-                    startY = j;
-                }
+            if (byFrequency != 0) {
+                return byFrequency;
             }
+
+            return Integer.compare(x, y);
+        });
+
+        for (int i = 0; i < k; i++) {
+            System.out.print(numbers.get(i) + " ");
         }
 
-        int[] dx = {-1, 1, 0, 0};
-        int[] dy = {0, 0, -1, 1};
-
-        Queue<int[]> queue = new ArrayDeque<>();
-
-        queue.add(new int[]{startX, startY});
-        dist[startX][startY] = 0;
-
-        while (!queue.isEmpty()) {
-
-            int[] current = queue.poll();
-
-            int x = current[0];
-            int y = current[1];
-
-            if (grid[x][y] == 'T') {
-                System.out.println("Shortest path: " + dist[x][y]);
-                return;
-            }
-
-            for (int d = 0; d < 4; d++) {
-
-                int nx = x + dx[d];
-                int ny = y + dy[d];
-
-                if (nx < 0 || nx >= n || ny < 0 || ny >= m) {
-                    continue;
-                }
-
-                if (grid[nx][ny] == '#') {
-                    continue;
-                }
-
-                if (dist[nx][ny] != -1) {
-                    continue;
-                }
-
-                dist[nx][ny] = dist[x][y] + 1;
-
-                queue.add(new int[]{nx, ny});
-            }
-        }
-
-        System.out.println("Shortest path: -1");
+        System.out.println("\n");
     }
+
+
+    // ЗАДАЧА 3.
+    // Медиана после каждого поступившего числа.
 
     static void task3() {
+        System.out.println("Задача 3:");
 
-        int[] next = {
-                2, 3, 4, 5, 3
-        };
+        int[] a = {5, 2, 10, 4};
 
-        int start = 1;
+        // Левая половина — max-heap.
+        PriorityQueue<Long> left =
+                new PriorityQueue<>(Collections.reverseOrder());
 
-        int slow = start;
-        int fast = start;
+        // Правая половина — min-heap.
+        PriorityQueue<Long> right =
+                new PriorityQueue<>();
 
-        while (true) {
+        for (int x : a) {
+            long value = x;
 
-            if (slow == -1) {
-                System.out.println("NO");
-                return;
+            if (left.isEmpty() || value <= left.peek()) {
+                left.add(value);
+            } else {
+                right.add(value);
             }
 
-            slow = next[slow - 1];
-
-            if (fast == -1) {
-                System.out.println("NO");
-                return;
+            // Балансируем размеры куч.
+            if (left.size() > right.size() + 1) {
+                right.add(left.poll());
             }
 
-            fast = next[fast - 1];
-
-            if (fast == -1) {
-                System.out.println("NO");
-                return;
+            if (right.size() > left.size()) {
+                left.add(right.poll());
             }
 
-            fast = next[fast - 1];
+            double median;
 
-            if (slow == -1 || fast == -1) {
-                System.out.println("NO");
-                return;
+            if (left.size() == right.size()) {
+                median = (left.peek() + right.peek()) / 2.0;
+            } else {
+                median = left.peek();
             }
 
-            if (slow == fast) {
-                System.out.println("YES");
-                return;
-            }
+            System.out.printf(Locale.US, "%.1f ", median);
         }
+
+        System.out.println("\n");
     }
+
+
+    // ЗАДАЧА 4.
+    // Максимальная сумма маршрута в бинарном дереве.
 
     static void task4() {
+        System.out.println("Задача 4:");
 
-        char[][] matrix = {
-                {'1', '0', '1', '0', '0'},
-                {'1', '0', '1', '1', '1'},
-                {'1', '1', '1', '1', '1'},
-                {'1', '0', '0', '1', '0'}
-        };
+        int[] value = {5, 3, 8, 2, 4, 7, 9};
+        int[] left  = {1, 3, 5, -1, -1, -1, -1};
+        int[] right = {2, 4, 6, -1, -1, -1, -1};
 
-        int n = matrix.length;
-        int m = matrix[0].length;
+        int n = value.length;
 
-        int[] heights = new int[m];
+        // Получаем порядок обхода дерева.
+        // Затем обработаем его в обратном порядке.
+        int[] order = new int[n];
+        int[] stack = new int[n];
 
-        int maxArea = 0;
+        int stackSize = 0;
+        int orderSize = 0;
 
-        for (int i = 0; i < n; i++) {
+        stack[stackSize++] = 0;
 
-            for (int j = 0; j < m; j++) {
+        while (stackSize > 0) {
+            int v = stack[--stackSize];
 
-                if (matrix[i][j] == '1') {
-                    heights[j]++;
-                } else {
-                    heights[j] = 0;
-                }
+            order[orderSize++] = v;
+
+            if (left[v] != -1) {
+                stack[stackSize++] = left[v];
             }
 
-            maxArea = Math.max(maxArea, largestRectangle(heights));
+            if (right[v] != -1) {
+                stack[stackSize++] = right[v];
+            }
         }
 
-        System.out.println("Maximum rectangle area: " + maxArea);
+        // down[v] — максимальная сумма пути,
+        // который начинается в v и идет вниз.
+        long[] down = new long[n];
+
+        long answer = Long.MIN_VALUE;
+
+        for (int i = orderSize - 1; i >= 0; i--) {
+            int v = order[i];
+
+            long leftPath = 0;
+            long rightPath = 0;
+
+            if (left[v] != -1) {
+                leftPath = Math.max(0, down[left[v]]);
+            }
+
+            if (right[v] != -1) {
+                rightPath = Math.max(0, down[right[v]]);
+            }
+
+            // Лучший путь, проходящий через текущую вершину.
+            long currentPath =
+                    (long) value[v] + leftPath + rightPath;
+
+            answer = Math.max(answer, currentPath);
+
+            // Лучший путь из вершины вниз.
+            down[v] = value[v] + Math.max(leftPath, rightPath);
+        }
+
+        System.out.println(answer);
+        System.out.println();
     }
 
-    static int largestRectangle(int[] heights) {
 
-        Stack<Integer> stack = new Stack<>();
+    // ЗАДАЧА 5.
+    // k-я наименьшая сумма A[i] + B[j].
 
-        int maxArea = 0;
-        int n = heights.length;
+    static class Pair {
+        long sum;
+        int i;
+        int j;
 
-        for (int i = 0; i <= n; i++) {
-
-            int currentHeight = (i == n) ? 0 : heights[i];
-
-            while (!stack.isEmpty() &&
-                    heights[stack.peek()] > currentHeight) {
-
-                int height = heights[stack.pop()];
-
-                int width;
-
-                if (stack.isEmpty()) {
-                    width = i;
-                } else {
-                    width = i - stack.peek() - 1;
-                }
-
-                maxArea = Math.max(maxArea, height * width);
-            }
-
-            stack.push(i);
+        Pair(long sum, int i, int j) {
+            this.sum = sum;
+            this.i = i;
+            this.j = j;
         }
-
-        return maxArea;
     }
 
     static void task5() {
+        System.out.println("Задача 5:");
 
-        char[][] grid = {
-                {'S', '.', 'a', '#', 'T'},
-                {'#', '#', '.', '#', '.'},
-                {'.', '.', '.', 'A', '.'},
-                {'.', '#', '#', '#', '.'},
-                {'.', '.', '.', '.', '.'}
-        };
+        int[] a = {1, 3, 5};
+        int[] b = {2, 4};
 
-        int n = grid.length;
-        int m = grid[0].length;
+        int k = 4;
 
-        int startX = 0;
-        int startY = 0;
+        // Min-heap пар.
+        PriorityQueue<Pair> pq = new PriorityQueue<>(
+                (x, y) -> Long.compare(x.sum, y.sum)
+        );
 
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < m; j++) {
+        // Достаточно начать с первых min(n, k) строк.
+        for (int i = 0; i < Math.min(a.length, k); i++) {
+            pq.add(new Pair((long) a[i] + b[0], i, 0));
+        }
 
-                if (grid[i][j] == 'S') {
-                    startX = i;
-                    startY = j;
-                }
+        long answer = 0;
+
+        for (int count = 0; count < k; count++) {
+            Pair current = pq.poll();
+
+            answer = current.sum;
+
+            int nextJ = current.j + 1;
+
+            if (nextJ < b.length) {
+                pq.add(new Pair(
+                        (long) a[current.i] + b[nextJ],
+                        current.i,
+                        nextJ
+                ));
             }
         }
 
-        int[][][] dist = new int[n][m][1 << 10];
+        System.out.println(answer);
+        System.out.println();
+    }
 
-        for (int[][] row : dist) {
-            for (int[] cell : row) {
-                Arrays.fill(cell, -1);
+
+    // ЗАДАЧА 6.
+    // Медиана каждого скользящего окна.
+
+    static class MedianWindow {
+
+        TreeMap<Long, Integer> lower = new TreeMap<>();
+        TreeMap<Long, Integer> upper = new TreeMap<>();
+
+        int lowerSize = 0;
+        int upperSize = 0;
+
+        void addToMap(TreeMap<Long, Integer> map, long x) {
+            map.put(x, map.getOrDefault(x, 0) + 1);
+        }
+
+        void removeFromMap(TreeMap<Long, Integer> map, long x) {
+            int count = map.get(x);
+
+            if (count == 1) {
+                map.remove(x);
+            } else {
+                map.put(x, count - 1);
             }
         }
 
-        int[] dx = {-1, 1, 0, 0};
-        int[] dy = {0, 0, -1, 1};
-
-        Queue<int[]> queue = new ArrayDeque<>();
-
-        queue.add(new int[]{startX, startY, 0});
-        dist[startX][startY][0] = 0;
-
-        while (!queue.isEmpty()) {
-
-            int[] current = queue.poll();
-
-            int x = current[0];
-            int y = current[1];
-            int mask = current[2];
-
-            if (grid[x][y] == 'T') {
-                System.out.println("Shortest path with keys: " +
-                        dist[x][y][mask]);
-                return;
+        void add(long x) {
+            if (lower.isEmpty() || x <= lower.lastKey()) {
+                addToMap(lower, x);
+                lowerSize++;
+            } else {
+                addToMap(upper, x);
+                upperSize++;
             }
 
-            for (int d = 0; d < 4; d++) {
+            balance();
+        }
 
-                int nx = x + dx[d];
-                int ny = y + dy[d];
+        void remove(long x) {
+            if (lower.containsKey(x)) {
+                removeFromMap(lower, x);
+                lowerSize--;
+            } else {
+                removeFromMap(upper, x);
+                upperSize--;
+            }
 
-                if (nx < 0 || nx >= n || ny < 0 || ny >= m) {
-                    continue;
-                }
+            balance();
+        }
 
-                char cell = grid[nx][ny];
+        void balance() {
+            // В lower должно быть столько же элементов,
+            // сколько в upper, либо на один больше.
 
-                if (cell == '#') {
-                    continue;
-                }
+            while (lowerSize > upperSize + 1) {
+                long x = lower.lastKey();
 
-                if (cell >= 'A' && cell <= 'J') {
+                removeFromMap(lower, x);
+                lowerSize--;
 
-                    int key = cell - 'A';
+                addToMap(upper, x);
+                upperSize++;
+            }
 
-                    if ((mask & (1 << key)) == 0) {
-                        continue;
-                    }
-                }
+            while (lowerSize < upperSize) {
+                long x = upper.firstKey();
 
-                int newMask = mask;
+                removeFromMap(upper, x);
+                upperSize--;
 
-                if (cell >= 'a' && cell <= 'j') {
-                    newMask |= 1 << (cell - 'a');
-                }
-
-                if (dist[nx][ny][newMask] != -1) {
-                    continue;
-                }
-
-                dist[nx][ny][newMask] =
-                        dist[x][y][mask] + 1;
-
-                queue.add(new int[]{nx, ny, newMask});
+                addToMap(lower, x);
+                lowerSize++;
             }
         }
 
-        System.out.println("Shortest path with keys: -1");
+        double getMedian() {
+            if (lowerSize > upperSize) {
+                return lower.lastKey();
+            }
+
+            return (lower.lastKey() + upper.firstKey()) / 2.0;
+        }
     }
 
     static void task6() {
+        System.out.println("Задача 6:");
 
-        int[] nums = {1, 3, 4, 2, 2};
+        int[] a = {1, 3, -1, -3, 5, 3, 6, 7};
+        int k = 3;
 
-        int slow = nums[0];
-        int fast = nums[0];
+        MedianWindow window = new MedianWindow();
 
-        do {
-            slow = nums[slow];
-            fast = nums[nums[fast]];
-
-        } while (slow != fast);
-
-        slow = nums[0];
-
-        while (slow != fast) {
-            slow = nums[slow];
-            fast = nums[fast];
+        for (int i = 0; i < k; i++) {
+            window.add(a[i]);
         }
 
-        System.out.println("Duplicate number: " + slow);
+        // Первое окно.
+        System.out.printf(
+                Locale.US, "%.1f ", window.getMedian()
+        );
+
+        // Остальные окна.
+        for (int i = k; i < a.length; i++) {
+            window.remove(a[i - k]);
+            window.add(a[i]);
+
+            System.out.printf(
+                    Locale.US, "%.1f ", window.getMedian()
+            );
+        }
+
+        System.out.println();
     }
 }
