@@ -5,246 +5,360 @@ public class Main {
 
     public static void main(String[] args) {
 
-        System.out.println("========== TASK 1 ==========");
+        System.out.println("Задача 1");
         task1();
 
-        System.out.println("\n========== TASK 2 ==========");
+        System.out.println("\nЗадача 2");
         task2();
 
-        System.out.println("\n========== TASK 3 ==========");
+        System.out.println("\nЗадача 3");
         task3();
 
-        System.out.println("\n========== TASK 4 ==========");
+        System.out.println("\nЗадача 4");
         task4();
 
-        System.out.println("\n========== TASK 5 ==========");
+        System.out.println("\nЗадача 5");
         task5();
 
-        System.out.println("\n========== TASK 6 ==========");
+        System.out.println("\nЗадача 6");
         task6();
     }
 
-    // TASK 1: Binary Search
     static void task1() {
-        int[] nums = {1, 2, 3, 3, 5, 7};
-        int target = 3;
 
-        int left = 0;
-        int right = nums.length;
+        int[] prices = {73, 74, 75, 71, 69, 72, 76, 73};
 
-        while (left < right) {
-            int mid = left + (right - left) / 2;
+        int n = prices.length;
+        int[] result = new int[n];
 
-            if (nums[mid] < target) {
-                left = mid + 1;
-            } else {
-                right = mid;
+        Stack<Integer> stack = new Stack<>();
+
+        for (int i = 0; i < n; i++) {
+
+            while (!stack.isEmpty() &&
+                    prices[i] > prices[stack.peek()]) {
+
+                int index = stack.pop();
+                result[index] = i - index;
             }
+
+            stack.push(i);
         }
 
-        System.out.println("Array: " + Arrays.toString(nums));
-        System.out.println("Target: " + target);
-        System.out.println("Result: " + left);
+        System.out.println("Prices: " + Arrays.toString(prices));
+        System.out.println("Result: " + Arrays.toString(result));
     }
 
-    // TASK 2: Prefix Sum
     static void task2() {
-        int[] nums = {1, 2, 3, 4, 5};
 
-        long[] prefix = new long[nums.length + 1];
-
-        for (int i = 0; i < nums.length; i++) {
-            prefix[i + 1] = prefix[i] + nums[i];
-        }
-
-        int[][] queries = {
-                {0, 2},
-                {1, 3},
-                {2, 4}
+        char[][] grid = {
+                {'S', '.', '.', '#', '.'},
+                {'#', '#', '.', '#', '.'},
+                {'.', '.', '.', '.', '.'},
+                {'.', '#', '#', '#', '.'},
+                {'.', '.', '.', 'T', '.'}
         };
 
-        System.out.println("Array: " + Arrays.toString(nums));
+        int n = grid.length;
+        int m = grid[0].length;
 
-        for (int[] query : queries) {
-            int L = query[0];
-            int R = query[1];
+        int[][] dist = new int[n][m];
 
-            long sum = prefix[R + 1] - prefix[L];
-
-            System.out.println(
-                    "L = " + L + ", R = " + R +
-                            ", Sum = " + sum
-            );
+        for (int[] row : dist) {
+            Arrays.fill(row, -1);
         }
+
+        int startX = 0;
+        int startY = 0;
+
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+
+                if (grid[i][j] == 'S') {
+                    startX = i;
+                    startY = j;
+                }
+            }
+        }
+
+        int[] dx = {-1, 1, 0, 0};
+        int[] dy = {0, 0, -1, 1};
+
+        Queue<int[]> queue = new ArrayDeque<>();
+
+        queue.add(new int[]{startX, startY});
+        dist[startX][startY] = 0;
+
+        while (!queue.isEmpty()) {
+
+            int[] current = queue.poll();
+
+            int x = current[0];
+            int y = current[1];
+
+            if (grid[x][y] == 'T') {
+                System.out.println("Shortest path: " + dist[x][y]);
+                return;
+            }
+
+            for (int d = 0; d < 4; d++) {
+
+                int nx = x + dx[d];
+                int ny = y + dy[d];
+
+                if (nx < 0 || nx >= n || ny < 0 || ny >= m) {
+                    continue;
+                }
+
+                if (grid[nx][ny] == '#') {
+                    continue;
+                }
+
+                if (dist[nx][ny] != -1) {
+                    continue;
+                }
+
+                dist[nx][ny] = dist[x][y] + 1;
+
+                queue.add(new int[]{nx, ny});
+            }
+        }
+
+        System.out.println("Shortest path: -1");
     }
 
-    // TASK 3: Merge Intervals
     static void task3() {
-        int[][] intervals = {
-                {1, 3},
-                {2, 6},
-                {8, 10},
-                {10, 12},
-                {15, 18}
+
+        int[] next = {
+                2, 3, 4, 5, 3
         };
 
-        Arrays.sort(intervals, (a, b) ->
-                Integer.compare(a[0], b[0])
-        );
+        int start = 1;
 
-        List<int[]> result = new ArrayList<>();
+        int slow = start;
+        int fast = start;
 
-        for (int[] interval : intervals) {
-            int start = interval[0];
-            int end = interval[1];
+        while (true) {
 
-            if (result.isEmpty() ||
-                    start > result.get(result.size() - 1)[1]) {
-
-                result.add(new int[]{start, end});
-
-            } else {
-                int[] last = result.get(result.size() - 1);
-                last[1] = Math.max(last[1], end);
-            }
-        }
-
-        System.out.println("Original intervals:");
-
-        for (int[] interval : intervals) {
-            System.out.println(Arrays.toString(interval));
-        }
-
-        System.out.println("Merged intervals:");
-
-        for (int[] interval : result) {
-            System.out.println(Arrays.toString(interval));
-        }
-    }
-
-    // TASK 4: Capacity To Ship Packages
-    static boolean canShip(
-            int[] weights,
-            int days,
-            long capacity
-    ) {
-        int usedDays = 1;
-        long currentWeight = 0;
-
-        for (int weight : weights) {
-            if (currentWeight + weight > capacity) {
-                usedDays++;
-                currentWeight = 0;
+            if (slow == -1) {
+                System.out.println("NO");
+                return;
             }
 
-            currentWeight += weight;
+            slow = next[slow - 1];
 
-            if (usedDays > days) {
-                return false;
+            if (fast == -1) {
+                System.out.println("NO");
+                return;
+            }
+
+            fast = next[fast - 1];
+
+            if (fast == -1) {
+                System.out.println("NO");
+                return;
+            }
+
+            fast = next[fast - 1];
+
+            if (slow == -1 || fast == -1) {
+                System.out.println("NO");
+                return;
+            }
+
+            if (slow == fast) {
+                System.out.println("YES");
+                return;
             }
         }
-
-        return true;
     }
 
     static void task4() {
-        int[] weights = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-        int days = 5;
 
-        long left = 0;
-        long right = 0;
-
-        for (int weight : weights) {
-            left = Math.max(left, weight);
-            right += weight;
-        }
-
-        while (left < right) {
-            long mid = left + (right - left) / 2;
-
-            if (canShip(weights, days, mid)) {
-                right = mid;
-            } else {
-                left = mid + 1;
-            }
-        }
-
-        System.out.println("Weights: " + Arrays.toString(weights));
-        System.out.println("Days: " + days);
-        System.out.println("Minimum capacity: " + left);
-    }
-
-    // TASK 5: Subarray Sum Equals K
-    static void task5() {
-        int[] nums = {1, 2, 1, 2, 1};
-        long k = 3;
-
-        Map<Long, Long> map = new HashMap<>();
-
-        map.put(0L, 1L);
-
-        long sum = 0;
-        long count = 0;
-
-        for (int x : nums) {
-            sum += x;
-
-            count += map.getOrDefault(sum - k, 0L);
-
-            map.put(
-                    sum,
-                    map.getOrDefault(sum, 0L) + 1
-            );
-        }
-
-        System.out.println("Array: " + Arrays.toString(nums));
-        System.out.println("K: " + k);
-        System.out.println("Number of subarrays: " + count);
-    }
-
-    // TASK 6: Meeting Rooms II
-    static void task6() {
-        int[][] meetings = {
-                {0, 30},
-                {5, 10},
-                {15, 20},
-                {20, 25}
+        char[][] matrix = {
+                {'1', '0', '1', '0', '0'},
+                {'1', '0', '1', '1', '1'},
+                {'1', '1', '1', '1', '1'},
+                {'1', '0', '0', '1', '0'}
         };
 
-        int n = meetings.length;
+        int n = matrix.length;
+        int m = matrix[0].length;
 
-        int[] starts = new int[n];
-        int[] ends = new int[n];
+        int[] heights = new int[m];
 
-        for (int i = 0; i < n; i++) {
-            starts[i] = meetings[i][0];
-            ends[i] = meetings[i][1];
-        }
-
-        Arrays.sort(starts);
-        Arrays.sort(ends);
-
-        int rooms = 0;
-        int maxRooms = 0;
-        int j = 0;
+        int maxArea = 0;
 
         for (int i = 0; i < n; i++) {
-            if (starts[i] >= ends[j]) {
-                rooms--;
-                j++;
+
+            for (int j = 0; j < m; j++) {
+
+                if (matrix[i][j] == '1') {
+                    heights[j]++;
+                } else {
+                    heights[j] = 0;
+                }
             }
 
-            rooms++;
-
-            maxRooms = Math.max(maxRooms, rooms);
+            maxArea = Math.max(maxArea, largestRectangle(heights));
         }
 
-        System.out.println("Meetings:");
+        System.out.println("Maximum rectangle area: " + maxArea);
+    }
 
-        for (int[] meeting : meetings) {
-            System.out.println(Arrays.toString(meeting));
+    static int largestRectangle(int[] heights) {
+
+        Stack<Integer> stack = new Stack<>();
+
+        int maxArea = 0;
+        int n = heights.length;
+
+        for (int i = 0; i <= n; i++) {
+
+            int currentHeight = (i == n) ? 0 : heights[i];
+
+            while (!stack.isEmpty() &&
+                    heights[stack.peek()] > currentHeight) {
+
+                int height = heights[stack.pop()];
+
+                int width;
+
+                if (stack.isEmpty()) {
+                    width = i;
+                } else {
+                    width = i - stack.peek() - 1;
+                }
+
+                maxArea = Math.max(maxArea, height * width);
+            }
+
+            stack.push(i);
         }
 
-        System.out.println("Minimum rooms: " + maxRooms);
+        return maxArea;
+    }
+
+    static void task5() {
+
+        char[][] grid = {
+                {'S', '.', 'a', '#', 'T'},
+                {'#', '#', '.', '#', '.'},
+                {'.', '.', '.', 'A', '.'},
+                {'.', '#', '#', '#', '.'},
+                {'.', '.', '.', '.', '.'}
+        };
+
+        int n = grid.length;
+        int m = grid[0].length;
+
+        int startX = 0;
+        int startY = 0;
+
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+
+                if (grid[i][j] == 'S') {
+                    startX = i;
+                    startY = j;
+                }
+            }
+        }
+
+        int[][][] dist = new int[n][m][1 << 10];
+
+        for (int[][] row : dist) {
+            for (int[] cell : row) {
+                Arrays.fill(cell, -1);
+            }
+        }
+
+        int[] dx = {-1, 1, 0, 0};
+        int[] dy = {0, 0, -1, 1};
+
+        Queue<int[]> queue = new ArrayDeque<>();
+
+        queue.add(new int[]{startX, startY, 0});
+        dist[startX][startY][0] = 0;
+
+        while (!queue.isEmpty()) {
+
+            int[] current = queue.poll();
+
+            int x = current[0];
+            int y = current[1];
+            int mask = current[2];
+
+            if (grid[x][y] == 'T') {
+                System.out.println("Shortest path with keys: " +
+                        dist[x][y][mask]);
+                return;
+            }
+
+            for (int d = 0; d < 4; d++) {
+
+                int nx = x + dx[d];
+                int ny = y + dy[d];
+
+                if (nx < 0 || nx >= n || ny < 0 || ny >= m) {
+                    continue;
+                }
+
+                char cell = grid[nx][ny];
+
+                if (cell == '#') {
+                    continue;
+                }
+
+                if (cell >= 'A' && cell <= 'J') {
+
+                    int key = cell - 'A';
+
+                    if ((mask & (1 << key)) == 0) {
+                        continue;
+                    }
+                }
+
+                int newMask = mask;
+
+                if (cell >= 'a' && cell <= 'j') {
+                    newMask |= 1 << (cell - 'a');
+                }
+
+                if (dist[nx][ny][newMask] != -1) {
+                    continue;
+                }
+
+                dist[nx][ny][newMask] =
+                        dist[x][y][mask] + 1;
+
+                queue.add(new int[]{nx, ny, newMask});
+            }
+        }
+
+        System.out.println("Shortest path with keys: -1");
+    }
+
+    static void task6() {
+
+        int[] nums = {1, 3, 4, 2, 2};
+
+        int slow = nums[0];
+        int fast = nums[0];
+
+        do {
+            slow = nums[slow];
+            fast = nums[nums[fast]];
+
+        } while (slow != fast);
+
+        slow = nums[0];
+
+        while (slow != fast) {
+            slow = nums[slow];
+            fast = nums[fast];
+        }
+
+        System.out.println("Duplicate number: " + slow);
     }
 }
