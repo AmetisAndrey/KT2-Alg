@@ -3,161 +3,300 @@ import java.util.*;
 
 public class Main {
 
-    public static void main(String[] args) {
-        task1();
-        task2();
-        task3();
-        task4();
-        task5();
-        task6();
-    }
+    static final long INF = Long.MAX_VALUE / 4;
+    static final int MOD = 1_000_000_007;
 
-    // =====================================================
-    // Общий класс узла односвязного списка
-    // =====================================================
+    static class Edge {
+        int from;
+        int to;
+        long weight;
 
-    static class Node {
-        int value;
-        Node next;
-
-        Node(int value) {
-            this.value = value;
+        Edge(int from, int to, long weight) {
+            this.from = from;
+            this.to = to;
+            this.weight = weight;
         }
     }
 
-    static Node buildList(int[] a) {
-        Node dummy = new Node(0);
-        Node tail = dummy;
+    static class State {
+        int vertex;
+        long distance;
 
-        for (int x : a) {
-            tail.next = new Node(x);
-            tail = tail.next;
+        State(int vertex, long distance) {
+            this.vertex = vertex;
+            this.distance = distance;
         }
-
-        return dummy.next;
     }
 
-    static void printList(Node head) {
-        while (head != null) {
-            System.out.print(head.value);
+    static class MultiState {
+        int vertex;
+        int source;
+        long distance;
 
-            if (head.next != null) {
-                System.out.print(" ");
-            }
+        MultiState(int vertex, int source, long distance) {
+            this.vertex = vertex;
+            this.source = source;
+            this.distance = distance;
+        }
+    }
 
-            head = head.next;
+    static void addDirected(
+            List<Edge>[] graph,
+            int u,
+            int v,
+            long w
+    ) {
+        graph[u].add(new Edge(u, v, w));
+    }
+
+    static void addUndirected(
+            List<Edge>[] graph,
+            int u,
+            int v,
+            long w
+    ) {
+        graph[u].add(new Edge(u, v, w));
+        graph[v].add(new Edge(v, u, w));
+    }
+
+    static List<Edge>[] createGraph(int n) {
+        List<Edge>[] graph = new ArrayList[n + 1];
+
+        for (int i = 1; i <= n; i++) {
+            graph[i] = new ArrayList<>();
         }
 
-        System.out.println();
+        return graph;
     }
 
 
     // =====================================================
-    // ЗАДАЧА 1. Разворот односвязного списка
+    // ЗАДАЧА 1. Кратчайшие пути из одной вершины.
+    // Алгоритм Дейкстры.
     // =====================================================
 
     static void task1() {
         System.out.println("Задача 1:");
 
-        int[] a = {1, 2, 3, 4, 5};
+        int n = 5;
+        int s = 1;
 
-        Node head = buildList(a);
+        List<Edge>[] graph = createGraph(n);
 
-        Node previous = null;
-        Node current = head;
+        addDirected(graph, 1, 2, 2);
+        addDirected(graph, 1, 3, 5);
+        addDirected(graph, 2, 3, 1);
+        addDirected(graph, 2, 4, 2);
+        addDirected(graph, 3, 4, 1);
+        addDirected(graph, 4, 5, 3);
 
-        while (current != null) {
-            Node next = current.next;
+        long[] dist = dijkstra(graph, n, s);
 
-            current.next = previous;
-
-            previous = current;
-            current = next;
+        for (int v = 1; v <= n; v++) {
+            if (dist[v] == INF) {
+                System.out.print("INF ");
+            } else {
+                System.out.print(dist[v] + " ");
+            }
         }
 
-        head = previous;
+        System.out.println("\n");
+    }
 
-        printList(head);
-        System.out.println();
+    static long[] dijkstra(
+            List<Edge>[] graph,
+            int n,
+            int start
+    ) {
+        long[] dist = new long[n + 1];
+        Arrays.fill(dist, INF);
+
+        PriorityQueue<State> pq = new PriorityQueue<>(
+                Comparator.comparingLong(x -> x.distance)
+        );
+
+        dist[start] = 0;
+        pq.add(new State(start, 0));
+
+        while (!pq.isEmpty()) {
+            State current = pq.poll();
+
+            int v = current.vertex;
+            long d = current.distance;
+
+            if (d != dist[v]) {
+                continue;
+            }
+
+            for (Edge edge : graph[v]) {
+                int to = edge.to;
+                long newDist = d + edge.weight;
+
+                if (newDist < dist[to]) {
+                    dist[to] = newDist;
+                    pq.add(new State(to, newDist));
+                }
+            }
+        }
+
+        return dist;
     }
 
 
     // =====================================================
-    // ЗАДАЧА 2. DSU: объединение и проверка связности
+    // ЗАДАЧА 2. Кратчайшие пути с отрицательными весами.
+    // Алгоритм Беллмана — Форда.
     // =====================================================
-
-    static class DSU {
-        int[] parent;
-        int[] size;
-
-        DSU(int n) {
-            parent = new int[n + 1];
-            size = new int[n + 1];
-
-            for (int i = 1; i <= n; i++) {
-                parent[i] = i;
-                size[i] = 1;
-            }
-        }
-
-        int find(int x) {
-            if (parent[x] != x) {
-                parent[x] = find(parent[x]);
-            }
-
-            return parent[x];
-        }
-
-        void union(int a, int b) {
-            int rootA = find(a);
-            int rootB = find(b);
-
-            if (rootA == rootB) {
-                return;
-            }
-
-            if (size[rootA] < size[rootB]) {
-                int temp = rootA;
-                rootA = rootB;
-                rootB = temp;
-            }
-
-            parent[rootB] = rootA;
-            size[rootA] += size[rootB];
-        }
-
-        boolean connected(int a, int b) {
-            return find(a) == find(b);
-        }
-    }
 
     static void task2() {
         System.out.println("Задача 2:");
 
         int n = 5;
+        int s = 1;
 
-        int[][] operations = {
-                {1, 1, 2},
-                {1, 2, 3},
-                {2, 1, 3},
-                {2, 1, 4},
-                {1, 4, 5},
-                {2, 4, 5},
-                {2, 3, 5}
+        Edge[] edges = {
+                new Edge(1, 2, 4),
+                new Edge(1, 3, 5),
+                new Edge(2, 3, -2),
+                new Edge(3, 4, 3),
+                new Edge(2, 4, 4)
         };
 
-        DSU dsu = new DSU(n);
+        long[] dist = bellmanFord(n, edges, s);
 
-        for (int[] op : operations) {
-            int type = op[0];
-            int u = op[1];
-            int v = op[2];
+        for (int v = 1; v <= n; v++) {
+            if (dist[v] == INF) {
+                System.out.print("INF ");
+            } else {
+                System.out.print(dist[v] + " ");
+            }
+        }
 
-            if (type == 1) {
-                dsu.union(u, v);
+        System.out.println("\n");
+    }
+
+    static long[] bellmanFord(
+            int n,
+            Edge[] edges,
+            int start
+    ) {
+        long[] dist = new long[n + 1];
+        Arrays.fill(dist, INF);
+
+        dist[start] = 0;
+
+        for (int i = 1; i < n; i++) {
+            boolean changed = false;
+
+            for (Edge edge : edges) {
+                if (dist[edge.from] == INF) {
+                    continue;
+                }
+
+                long candidate =
+                        dist[edge.from] + edge.weight;
+
+                if (candidate < dist[edge.to]) {
+                    dist[edge.to] = candidate;
+                    changed = true;
+                }
+            }
+
+            if (!changed) {
+                break;
+            }
+        }
+
+        return dist;
+    }
+
+
+    // =====================================================
+    // ЗАДАЧА 3. Ближайший пункт помощи.
+    // Многократная Дейкстра.
+    // =====================================================
+
+    static void task3() {
+        System.out.println("Задача 3:");
+
+        int n = 5;
+
+        int[] sources = {2, 5};
+
+        List<Edge>[] graph = createGraph(n);
+
+        addUndirected(graph, 1, 2, 3);
+        addUndirected(graph, 2, 3, 4);
+        addUndirected(graph, 1, 4, 2);
+        addUndirected(graph, 4, 5, 6);
+        addUndirected(graph, 3, 5, 1);
+
+        long[] dist = new long[n + 1];
+        int[] nearest = new int[n + 1];
+
+        Arrays.fill(dist, INF);
+        Arrays.fill(nearest, -1);
+
+        PriorityQueue<MultiState> pq = new PriorityQueue<>(
+                (a, b) -> {
+                    int cmp = Long.compare(a.distance, b.distance);
+
+                    if (cmp != 0) {
+                        return cmp;
+                    }
+
+                    cmp = Integer.compare(a.source, b.source);
+
+                    if (cmp != 0) {
+                        return cmp;
+                    }
+
+                    return Integer.compare(a.vertex, b.vertex);
+                }
+        );
+
+        for (int source : sources) {
+            dist[source] = 0;
+            nearest[source] = source;
+
+            pq.add(new MultiState(source, source, 0));
+        }
+
+        while (!pq.isEmpty()) {
+            MultiState current = pq.poll();
+
+            int v = current.vertex;
+            int source = current.source;
+            long d = current.distance;
+
+            if (d != dist[v] || source != nearest[v]) {
+                continue;
+            }
+
+            for (Edge edge : graph[v]) {
+                int to = edge.to;
+                long newDist = d + edge.weight;
+
+                if (newDist < dist[to]
+                        || (newDist == dist[to]
+                        && source < nearest[to])) {
+
+                    dist[to] = newDist;
+                    nearest[to] = source;
+
+                    pq.add(new MultiState(
+                            to, source, newDist
+                    ));
+                }
+            }
+        }
+
+        for (int v = 1; v <= n; v++) {
+            if (nearest[v] == -1) {
+                System.out.println("-1 -1");
             } else {
                 System.out.println(
-                        dsu.connected(u, v) ? "YES" : "NO"
+                        nearest[v] + " " + dist[v]
                 );
             }
         }
@@ -167,342 +306,307 @@ public class Main {
 
 
     // =====================================================
-    // ЗАДАЧА 3. Лексикографически минимальная
-    // топологическая сортировка
+    // ЗАДАЧА 4. Кратчайший путь с одним купоном.
+    // Дейкстра по двум состояниям.
     // =====================================================
-
-    static void task3() {
-        System.out.println("Задача 3:");
-
-        int n = 4;
-
-        int[][] edges = {
-                {1, 3},
-                {2, 3},
-                {3, 4}
-        };
-
-        List<Integer>[] graph = new ArrayList[n + 1];
-
-        for (int i = 1; i <= n; i++) {
-            graph[i] = new ArrayList<>();
-        }
-
-        int[] indegree = new int[n + 1];
-
-        for (int[] edge : edges) {
-            int u = edge[0];
-            int v = edge[1];
-
-            graph[u].add(v);
-            indegree[v]++;
-        }
-
-        // Минимальная куча гарантирует
-        // лексикографически минимальный порядок.
-        PriorityQueue<Integer> pq = new PriorityQueue<>();
-
-        for (int i = 1; i <= n; i++) {
-            if (indegree[i] == 0) {
-                pq.add(i);
-            }
-        }
-
-        List<Integer> order = new ArrayList<>();
-
-        while (!pq.isEmpty()) {
-            int v = pq.poll();
-
-            order.add(v);
-
-            for (int to : graph[v]) {
-                indegree[to]--;
-
-                if (indegree[to] == 0) {
-                    pq.add(to);
-                }
-            }
-        }
-
-        if (order.size() != n) {
-            System.out.println(-1);
-        } else {
-            for (int x : order) {
-                System.out.print(x + " ");
-            }
-
-            System.out.println();
-        }
-
-        System.out.println();
-    }
-
-
-    // =====================================================
-    // ЗАДАЧА 4. Разворот каждого полного блока из k узлов
-    // =====================================================
-
-    static Node reverseKGroup(Node head, int k) {
-        if (head == null || k <= 1) {
-            return head;
-        }
-
-        Node dummy = new Node(0);
-        dummy.next = head;
-
-        Node groupPrevious = dummy;
-
-        while (true) {
-            // Находим последний узел очередного блока.
-            Node kth = groupPrevious;
-
-            for (int i = 0; i < k && kth != null; i++) {
-                kth = kth.next;
-            }
-
-            // Неполный блок оставляем без изменений.
-            if (kth == null) {
-                break;
-            }
-
-            Node groupNext = kth.next;
-
-            // Разворачиваем текущий блок.
-            Node previous = groupNext;
-            Node current = groupPrevious.next;
-
-            while (current != groupNext) {
-                Node next = current.next;
-
-                current.next = previous;
-
-                previous = current;
-                current = next;
-            }
-
-            // Новый первый узел блока — kth.
-            Node oldGroupStart = groupPrevious.next;
-
-            groupPrevious.next = kth;
-
-            // Переходим к следующему блоку.
-            groupPrevious = oldGroupStart;
-        }
-
-        return dummy.next;
-    }
 
     static void task4() {
         System.out.println("Задача 4:");
 
-        int[] a = {1, 2, 3, 4, 5, 6, 7, 8};
-        int k = 3;
-
-        Node head = buildList(a);
-
-        head = reverseKGroup(head, k);
-
-        printList(head);
-        System.out.println();
-    }
-
-
-    // =====================================================
-    // ЗАДАЧА 5. DSU с XOR-разницей между группами
-    // =====================================================
-
-    static class ParityDSU {
-        int[] parent;
-        int[] size;
-
-        // parity[x] = цвет[x] XOR цвет[parent[x]].
-        int[] parity;
-
-        ParityDSU(int n) {
-            parent = new int[n + 1];
-            size = new int[n + 1];
-            parity = new int[n + 1];
-
-            for (int i = 1; i <= n; i++) {
-                parent[i] = i;
-                size[i] = 1;
-                parity[i] = 0;
-            }
-        }
-
-        int find(int x) {
-            if (parent[x] == x) {
-                return x;
-            }
-
-            int oldParent = parent[x];
-
-            parent[x] = find(oldParent);
-
-            parity[x] ^= parity[oldParent];
-
-            return parent[x];
-        }
-
-        // Требуется:
-        // color[u] XOR color[v] = required.
-        boolean unite(int u, int v, int required) {
-            int rootU = find(u);
-            int rootV = find(v);
-
-            int parityU = parity[u];
-            int parityV = parity[v];
-
-            // Уже находятся в одной компоненте.
-            if (rootU == rootV) {
-                return (parityU ^ parityV) == required;
-            }
-
-            // Присоединяем меньшую компоненту к большей.
-            if (size[rootU] < size[rootV]) {
-                int temp = rootU;
-                rootU = rootV;
-                rootV = temp;
-            }
-
-            parent[rootV] = rootU;
-
-            // XOR-разница между корнями.
-            parity[rootV] = parityU ^ parityV ^ required;
-
-            size[rootU] += size[rootV];
-
-            return true;
-        }
-    }
-
-    static void task5() {
-        System.out.println("Задача 5:");
-
         int n = 4;
+        int s = 1;
+        int t = 4;
 
-        int[][] statements = {
-                {1, 2, 1},
-                {2, 3, 0},
-                {1, 3, 1},
-                {1, 3, 0},
-                {3, 4, 1}
-        };
+        List<Edge>[] graph = createGraph(n);
 
-        ParityDSU dsu = new ParityDSU(n);
+        addDirected(graph, 1, 2, 8);
+        addDirected(graph, 1, 3, 5);
+        addDirected(graph, 2, 4, 4);
+        addDirected(graph, 3, 4, 10);
+        addDirected(graph, 1, 4, 20);
 
-        boolean consistent = true;
+        long answer = dijkstraWithCoupon(graph, n, s, t);
 
-        for (int[] statement : statements) {
-            int u = statement[0];
-            int v = statement[1];
-            int r = statement[2];
-
-            if (consistent) {
-                consistent = dsu.unite(u, v, r);
-            }
-
-            System.out.println(
-                    consistent ? "YES" : "NO"
-            );
-        }
-
+        System.out.println(answer);
         System.out.println();
     }
 
+    static long dijkstraWithCoupon(
+            List<Edge>[] graph,
+            int n,
+            int start,
+            int target
+    ) {
+        // dist[v][0] — купон ещё не использован.
+        // dist[v][1] — купон уже использован.
+        long[][] dist = new long[n + 1][2];
 
-    // =====================================================
-    // ЗАДАЧА 6. Восстановление алфавита
-    // =====================================================
-
-    static void task6() {
-        System.out.println("Задача 6:");
-
-        int n = 5;
-        int k = 4;
-
-        String[] words = {
-                "baa",
-                "abcd",
-                "abca",
-                "cab",
-                "cad"
-        };
-
-        boolean[][] graph = new boolean[k][k];
-        int[] indegree = new int[k];
-
-        boolean impossible = false;
-
-        // Сравниваем только соседние слова.
-        for (int i = 0; i + 1 < n; i++) {
-            String first = words[i];
-            String second = words[i + 1];
-
-            int j = 0;
-
-            while (j < first.length()
-                    && j < second.length()
-                    && first.charAt(j) == second.charAt(j)) {
-                j++;
-            }
-
-            // Второе слово является началом первого.
-            // Такая пара нарушает порядок.
-            if (j == second.length() && first.length() > second.length()) {
-                impossible = true;
-                break;
-            }
-
-            // Нашли первую различающуюся букву.
-            if (j < first.length() && j < second.length()) {
-                int u = first.charAt(j) - 'a';
-                int v = second.charAt(j) - 'a';
-
-                if (!graph[u][v]) {
-                    graph[u][v] = true;
-                    indegree[v]++;
-                }
-            }
+        for (int i = 1; i <= n; i++) {
+            Arrays.fill(dist[i], INF);
         }
 
-        if (impossible) {
-            System.out.println("IMPOSSIBLE");
-            return;
-        }
+        PriorityQueue<State> pq = new PriorityQueue<>(
+                Comparator.comparingLong(x -> x.distance)
+        );
 
-        // Минимальная куча обеспечивает
-        // лексикографически наименьший порядок букв.
-        PriorityQueue<Integer> pq = new PriorityQueue<>();
+        // Кодируем состояние:
+        // vertex * 2 + usedCoupon.
+        dist[start][0] = 0;
 
-        for (int i = 0; i < k; i++) {
-            if (indegree[i] == 0) {
-                pq.add(i);
-            }
-        }
-
-        StringBuilder answer = new StringBuilder();
+        pq.add(new State(start * 2, 0));
 
         while (!pq.isEmpty()) {
-            int v = pq.poll();
+            State current = pq.poll();
 
-            answer.append((char) ('a' + v));
+            int v = current.vertex / 2;
+            int used = current.vertex % 2;
+            long d = current.distance;
 
-            for (int to = 0; to < k; to++) {
-                if (graph[v][to]) {
-                    indegree[to]--;
+            if (d != dist[v][used]) {
+                continue;
+            }
 
-                    if (indegree[to] == 0) {
-                        pq.add(to);
+            for (Edge edge : graph[v]) {
+                int to = edge.to;
+                long w = edge.weight;
+
+                // Вариант 1: едем без купона.
+                long normal = d + w;
+
+                if (normal < dist[to][used]) {
+                    dist[to][used] = normal;
+
+                    pq.add(new State(
+                            to * 2 + used,
+                            normal
+                    ));
+                }
+
+                // Вариант 2: используем купон,
+                // если он ещё не был использован.
+                if (used == 0) {
+                    long discounted = d + w / 2;
+
+                    if (discounted < dist[to][1]) {
+                        dist[to][1] = discounted;
+
+                        pq.add(new State(
+                                to * 2 + 1,
+                                discounted
+                        ));
                     }
                 }
             }
         }
 
-        if (answer.length() != k) {
+        long answer = Math.min(
+                dist[target][0],
+                dist[target][1]
+        );
+
+        return answer == INF ? -1 : answer;
+    }
+
+
+    // =====================================================
+    // ЗАДАЧА 5. Вершины, достижимые из отрицательных циклов.
+    // Беллман — Форд + BFS.
+    // =====================================================
+
+    static void task5() {
+        System.out.println("Задача 5:");
+
+        int n = 5;
+        int s = 1;
+
+        Edge[] edges = {
+                new Edge(1, 2, 1),
+                new Edge(2, 3, 1),
+                new Edge(3, 2, -3),
+                new Edge(1, 4, 5),
+                new Edge(4, 5, 1)
+        };
+
+        List<Edge>[] graph = createGraph(n);
+
+        for (Edge edge : edges) {
+            graph[edge.from].add(edge);
+        }
+
+        long[] dist = new long[n + 1];
+        Arrays.fill(dist, INF);
+
+        dist[s] = 0;
+
+        // Обычные релаксации Беллмана — Форда.
+        for (int i = 1; i < n; i++) {
+            boolean changed = false;
+
+            for (Edge edge : edges) {
+                if (dist[edge.from] == INF) {
+                    continue;
+                }
+
+                long candidate =
+                        dist[edge.from] + edge.weight;
+
+                if (candidate < dist[edge.to]) {
+                    dist[edge.to] = candidate;
+                    changed = true;
+                }
+            }
+
+            if (!changed) {
+                break;
+            }
+        }
+
+        // Ищем вершины, которые можно улучшить
+        // ещё на следующей итерации.
+        boolean[] negative = new boolean[n + 1];
+
+        Queue<Integer> queue = new ArrayDeque<>();
+
+        for (Edge edge : edges) {
+            if (dist[edge.from] == INF) {
+                continue;
+            }
+
+            if (dist[edge.from] + edge.weight < dist[edge.to]) {
+                if (!negative[edge.to]) {
+                    negative[edge.to] = true;
+                    queue.add(edge.to);
+                }
+            }
+        }
+
+        // Все вершины, достижимые из таких вершин,
+        // также имеют неограниченно уменьшаемую стоимость.
+        while (!queue.isEmpty()) {
+            int v = queue.poll();
+
+            for (Edge edge : graph[v]) {
+                int to = edge.to;
+
+                if (!negative[to]) {
+                    negative[to] = true;
+                    queue.add(to);
+                }
+            }
+        }
+
+        for (int v = 1; v <= n; v++) {
+            if (dist[v] == INF) {
+                System.out.println("*");
+            } else if (negative[v]) {
+                System.out.println("-");
+            } else {
+                System.out.println(dist[v]);
+            }
+        }
+
+        System.out.println();
+    }
+
+
+    // =====================================================
+    // ЗАДАЧА 6. Минимальная стоимость маршрута
+    // не более чем из K рёбер и количество таких маршрутов.
+    // =====================================================
+
+    static void task6() {
+        System.out.println("Задача 6:");
+
+        int n = 3;
+        int s = 1;
+        int t = 3;
+        int k = 3;
+
+        Edge[] edges = {
+                new Edge(1, 2, 1),
+                new Edge(2, 3, 2),
+                new Edge(1, 3, 5),
+                new Edge(1, 2, 1)
+        };
+
+        solveLimitedEdges(n, edges, s, t, k);
+    }
+
+    static void solveLimitedEdges(
+            int n,
+            Edge[] edges,
+            int start,
+            int target,
+            int k
+    ) {
+        // dp[v] — минимальная стоимость маршрута
+        // ровно из текущего количества рёбер.
+        long[] dp = new long[n + 1];
+
+        // ways[v] — количество маршрутов
+        // с этой минимальной стоимостью.
+        int[] ways = new int[n + 1];
+
+        Arrays.fill(dp, INF);
+
+        dp[start] = 0;
+        ways[start] = 1;
+
+        // Лучший ответ среди маршрутов
+        // с количеством рёбер от 0 до K.
+        long best = INF;
+        int bestWays = 0;
+
+        for (int step = 0; step <= k; step++) {
+
+            // Учитываем маршруты ровно из step рёбер.
+            if (dp[target] < best) {
+                best = dp[target];
+                bestWays = ways[target];
+            } else if (dp[target] == best && best != INF) {
+                bestWays = (int) (
+                        (bestWays + (long) ways[target]) % MOD
+                );
+            }
+
+            if (step == k) {
+                break;
+            }
+
+            long[] nextDp = new long[n + 1];
+            int[] nextWays = new int[n + 1];
+
+            Arrays.fill(nextDp, INF);
+
+            // Переходы только из предыдущего слоя.
+            for (Edge edge : edges) {
+                int u = edge.from;
+                int v = edge.to;
+
+                if (dp[u] == INF) {
+                    continue;
+                }
+
+                long candidate = dp[u] + edge.weight;
+
+                if (candidate < nextDp[v]) {
+                    nextDp[v] = candidate;
+                    nextWays[v] = ways[u];
+                } else if (candidate == nextDp[v]) {
+                    nextWays[v] = (int) (
+                            (nextWays[v] + (long) ways[u]) % MOD
+                    );
+                }
+            }
+
+            dp = nextDp;
+            ways = nextWays;
+        }
+
+        if (best == INF) {
             System.out.println("IMPOSSIBLE");
         } else {
-            System.out.println(answer);
+            System.out.println(best + " " + bestWays);
         }
     }
 }
